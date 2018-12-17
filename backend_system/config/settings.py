@@ -16,6 +16,7 @@ DEBUG = env.bool('DJANGO_DEBUG', True)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', 'lvh.me'])
 
+TEST_RUNNER = "django.test.runner.DiscoverRunner"
 
 # Application definition
 
