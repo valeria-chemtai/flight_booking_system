@@ -21,3 +21,8 @@ class User(AbstractBaseUser):
     class Meta:
         verbose_name = ('User')
         verbose_name_plural = ('Users')
+
+
+class Token(models.Model):
+    key = models.CharField(max_length=64, primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
