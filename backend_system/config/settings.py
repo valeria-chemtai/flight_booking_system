@@ -61,12 +61,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': env.str('POSTGRES_DB_NAME', 'flight_system'),
+        'USER': env.str('POSTGRES_DB_USER', 'postgres'),
+        'PASSWORD': env.str('POSTGRES_DB_PASSWORD', ''),
+        'HOST': env.str('POSTGRES_DB_HOST', 'localhost'),
+        'PORT': env.str('POSTGRES_DB_PORT', 5432),
+        'OPTIONS': {
+            'connect_timeout': 30,
+        }
     }
 }
 
