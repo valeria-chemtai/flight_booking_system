@@ -25,8 +25,6 @@ class TokenModelTestCase(TestCase):
             email='flightsystem@email.com', password='flightpassword')
 
     def test_user_token_saved_successfully(self):
-        Token.objects.create(user=self.user, key='Token abcdefgh123')
-
         self.assertEqual(Token.objects.all().count(), 1)
 
     def test_saving_user_token_fails_invalid_user(self):
