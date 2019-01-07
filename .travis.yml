@@ -9,5 +9,7 @@ env:
 before_script:
   - psql -c 'create database test_db;' -U postgres
 
-script: 
-  - cd backend_system && python manage.py test
+script:
+  - cd backend_system
+  - python manage.py migrate
+  - python manage.py test
