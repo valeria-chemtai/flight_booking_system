@@ -1,0 +1,92 @@
+from rest_framework import serializers
+from django.contrib.auth import authenticate
+from rest_framework.validators import UniqueValidator
+
+from authentication.models import User
+
+
+class UserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        validators=[UniqueValidator(queryset=User.objects.all(),
+                                    message='A user with this email address exists')])
+    first_name = serializers.CharField(
+        max_length=30, allow_null=False, allow_blank=False, required=True)
+    last_name = serializers.CharField(
+        max_length=30, allow_null=False, allow_blank=False, required=True)
+    avatar = serializers.ImageField(allow_null=True)
+
+    class Meta:
+        model = User
+        fields = ('pk', 'email', 'first_name', 'last_name', 'date_joined',
+                  'is_active', 'is_staff', 'is_superuser', 'avatar')
+        read_only_fields = ('pk', 'date_joined')
+
+
+class UserSignupSerializer(serializers.Serializer):
+    email = serializers.EmailField(
+        validators=[UniqueValidator(queryset=User.objects.all(),
+                                    message='A user with this email address exists')])
+    first_name = serializers.CharField(
+        max_length=30, allow_null=False, allow_blank=True, required=True)
+    last_name = serializers.CharField(
+        max_length=30, allow_null=False, allow_blank=True, required=True)
+    avatar = serializers.ImageField(allow_null=True)
+    password = serializers.CharField(required=True)
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            email=validated_data.pop('email'),
+            password=validated_data.pop('password'),
+            **validated_data)
+        return user
+
+
+class UserSignInSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        if email and password:
+            user = authenticate(
+                request=self.context.get('request'),
+                email=email,
+                password=password,
+            )
+            if not user:
+                raise serializers.ValidationError("Invalid email/password Combination.")
+        else:
+            raise serializers.ValidationError('Make sure you include "username" and "password".')
+
+        attrs['user'] = user
+        return attrs
+
+
+class UserChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(max_length=256, required=True)
+    new_password = serializers.CharField(max_length=256, required=True)
+    confirm_new_password = serializers.CharField(max_length=256, required=True)
+    # TODO: # revoke token in views and set new token
+
+    def validate_old_password(self, value):
+        user = self.context['user']
+        if not user.check_password(value):
+            raise serializers.ValidationError('Incorrect password.')
+        return value
+
+    def validate(self, data):
+        if not data.get('new_password') or not data.get('confirm_new_password'):
+            raise serializers.ValidationError("Please enter a new password and "
+                                              "confirm it.")
+
+        if data.get('new_password') != data.get('confirm_new_password'):
+            raise serializers.ValidationError("Passwords don't match.")
+
+        return data
+
+
+class UserResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(max_length=256, required=True)
