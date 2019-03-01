@@ -1,5 +1,6 @@
-from rest_framework import serializers
 from django.contrib.auth import authenticate
+
+from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from authentication.models import User
@@ -20,6 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('pk', 'email', 'first_name', 'last_name', 'date_joined',
                   'is_active', 'is_staff', 'is_superuser', 'avatar')
         read_only_fields = ('pk', 'date_joined')
+    # TODO: customize update to patch instead of put
 
 
 class UserSignupSerializer(serializers.Serializer):
@@ -30,7 +32,7 @@ class UserSignupSerializer(serializers.Serializer):
         max_length=30, allow_null=False, allow_blank=True, required=True)
     last_name = serializers.CharField(
         max_length=30, allow_null=False, allow_blank=True, required=True)
-    avatar = serializers.ImageField(allow_null=True)
+    avatar = serializers.ImageField(allow_null=True, required=False)
     password = serializers.CharField(required=True)
 
     def create(self, validated_data):
@@ -48,6 +50,12 @@ class UserSignInSerializer(serializers.Serializer):
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
+
+        if email:
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                raise serializers.ValidationError("User not registered. Please signup first.")
 
         if email and password:
             user = authenticate(
@@ -68,7 +76,6 @@ class UserChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(max_length=256, required=True)
     new_password = serializers.CharField(max_length=256, required=True)
     confirm_new_password = serializers.CharField(max_length=256, required=True)
-    # TODO: # revoke token in views and set new token
 
     def validate_old_password(self, value):
         user = self.context['user']
@@ -82,11 +89,11 @@ class UserChangePasswordSerializer(serializers.Serializer):
                                               "confirm it.")
 
         if data.get('new_password') != data.get('confirm_new_password'):
-            raise serializers.ValidationError("Passwords don't match.")
+            raise serializers.ValidationError("Passwords do not match.")
 
         return data
 
 
 class UserResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    password = serializers.CharField(max_length=256, required=True)
+    password = serializers.CharField(max_length=256, required=False)

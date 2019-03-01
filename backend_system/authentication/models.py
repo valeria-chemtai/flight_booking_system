@@ -45,7 +45,7 @@ class User(AbstractBaseUser):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
-    avatar = models. ImageField(upload_to='avatars/%Y/%m/%d/', null=True, blank=True)
+    avatar = models.ImageField(upload_to='avatars/%Y/%m/%d/', null=True, blank=True)
 
     objects = UserManager()
     USERNAME_FIELD = 'email'
