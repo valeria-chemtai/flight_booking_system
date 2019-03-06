@@ -10,6 +10,14 @@ class Location(BaseModel):
     class Meta:
         unique_together = (('country', 'city', 'airport'),)
 
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        # capitalize country and city.
+        self.country = self.country.capitalize()
+        self.city = self.country.capitalize()
+        return super(Location, self).save(force_insert=force_insert, force_update=force_update,
+                                          using=using, update_fields=update_fields)
+
 
 class Flight(SoftDeleteModel):
     name = models.CharField(max_length=60, null=False, blank=False, unique=True)
@@ -19,7 +27,16 @@ class Flight(SoftDeleteModel):
         'Location', related_name='flight_destination', null=True, on_delete=models.DO_NOTHING)
     departure_time = models.DateTimeField(null=True)
     arrival_time = models.DateTimeField(null=True)
-    gate = models.CharField(max_length=60, null=False, blank=False)
+    gate = models.CharField(max_length=60, null=True, blank=True)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        # uppercase name and gate.
+        self.name = self.name.upper()
+        if self.gate:
+            self.gate = self.gate.upper()
+        return super(Flight, self).save(force_insert=force_insert, force_update=force_update,
+                                        using=using, update_fields=update_fields)
 
     @transaction.atomic
     def delete(self, *args, **kwargs):
@@ -32,7 +49,15 @@ class Flight(SoftDeleteModel):
 
 
 class Seat(SoftDeleteModel):
+    class_group = models.CharField(max_length=60, default='Economy')
     letter = models.CharField(max_length=1, null=False, blank=False)
     row = models.IntegerField(null=False, blank=False)
     booked = models.BooleanField(null=False, default=False)
     flight = models.ForeignKey('Flight', null=False, blank=False, on_delete=models.CASCADE)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        # uppercase letter.
+        self.letter = self.letter.upper()
+        return super(Seat, self).save(force_insert=force_insert, force_update=force_update,
+                                      using=using, update_fields=update_fields)

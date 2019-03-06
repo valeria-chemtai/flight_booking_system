@@ -28,7 +28,7 @@ class LocationTestCase(TestCase):
 class FlightTestCase(TestCase):
     def setUp(self):
         self.flight = Flight.objects.create(
-            name='Flight1',
+            name='FLIGHT1',
             gate='G20'
         )
 
@@ -37,11 +37,11 @@ class FlightTestCase(TestCase):
 
     def test_unique_name(self):
         with self.assertRaises(IntegrityError):
-            Flight.objects.create(name='Flight1', gate='G20')
+            Flight.objects.create(name='FLIGHT1', gate='G20')
 
     def test_delete_soft_deletes(self):
         self.assertIsNone(self.flight.deleted_at)
-        Flight.objects.get(name='Flight1').delete()
+        Flight.objects.get(name='FLIGHT1').delete()
         self.assertEqual(Flight.objects.all().count(), 0)
         self.assertEqual(Flight.objects_with_deleted.all().count(), 1)
         self.assertIsNotNone(Flight.objects_with_deleted.get(pk=self.flight.pk).deleted_at)
@@ -49,7 +49,7 @@ class FlightTestCase(TestCase):
     def test_delete_soft_deletes_seats(self):
         seat = Seat.objects.create(letter='A', row='1', flight=self.flight)
         self.assertEqual(Seat.objects.all().count(), 1)
-        Flight.objects.get(name='Flight1').delete()
+        Flight.objects.get(name='FLIGHT1').delete()
         self.assertEqual(Seat.objects.all().count(), 0)
         self.assertIsNotNone(Seat.objects_with_deleted.get(pk=seat.pk).deleted_at)
 
@@ -57,7 +57,7 @@ class FlightTestCase(TestCase):
 class SeatTestCase(TestCase):
     def setUp(self):
         self.flight = Flight.objects.create(
-            name='Flight1',
+            name='FLIGHT1',
             gate='G20'
         )
 
