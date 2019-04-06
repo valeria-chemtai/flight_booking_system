@@ -2,6 +2,7 @@ from django.db import transaction
 
 from rest_framework import serializers
 
+from authentication.serializers import BasicUserSerializer
 from flights.models import Location, Flight, Seat
 
 
@@ -12,33 +13,80 @@ class LocationSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id', 'created_at', 'updated_at')
 
+    def validate(self, attrs):
+        country = attrs.get('country')
+        city = attrs.get('city')
+        airport = attrs.get('airport')
+        try:
+            # check if such a location already exists
+            # raise an exception if it exists
+            Location.objects.get(country=country, city=city, airport=airport)
+            raise serializers.ValidationError("Location already exists, kindly use existing location.")
+        except Location.DoesNotExist:
+            # continue with action if location does not exist.
+            pass
+        return attrs
 
-class FlightSerializer(serializers.ModelSerializer):
-    origin = LocationSerializer(required=False, allow_null=True)
-    origin = LocationSerializer(required=False, allow_null=True)
+
+class FlightSlimReadOnlySerializer(serializers.ModelSerializer):
+    origin = LocationSerializer(read_only=True)
+    destination = LocationSerializer(read_only=True)
+    departure_time = serializers.DateTimeField(allow_null=True, required=False)
+    arrival_time = serializers.DateTimeField(allow_null=True, required=False)
 
     class Meta:
         model = Flight
-        fields = '__all__'
+        fields = ('id', 'name', 'origin', 'destination', 'departure_time', 'arrival_time',
+                  'gate')
         read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class FlightEmployeeReadOnlySerializer(serializers.ModelSerializer):
+    origin = LocationSerializer(read_only=True)
+    destination = LocationSerializer(read_only=True)
+    departure_time = serializers.DateTimeField(allow_null=True, required=False)
+    arrival_time = serializers.DateTimeField(allow_null=True, required=False)
+    created_by = BasicUserSerializer(read_only=True)
+
+    class Meta:
+        model = Flight
+        fields = ('id', 'name', 'origin', 'destination', 'departure_time', 'arrival_time',
+                  'gate', 'created_by')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class FlightCreateSerializer(serializers.ModelSerializer):
+    origin = serializers.SlugRelatedField(
+        queryset=Location.objects.all(),
+        many=False, slug_field='airport', allow_null=True, required=False
+    )
+    destination = serializers.SlugRelatedField(
+        queryset=Location.objects.all(),
+        many=False, slug_field='airport', allow_null=True, required=False
+    )
+    departure_time = serializers.DateTimeField(allow_null=True, required=False)
+    arrival_time = serializers.DateTimeField(allow_null=True, required=False)
+
+    class Meta:
+        model = Flight
+        fields = ('id', 'name', 'origin', 'destination', 'departure_time', 'arrival_time',
+                  'gate')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+    def validate(self, attrs):
+        origin = attrs.get('origin')
+        destination = attrs.get('destination')
+
+        if (origin and destination) and (origin == destination):
+            raise serializers.ValidationError("Flight origin and destination can not be the same.")
+
+        return attrs
 
     @transaction.atomic
     def create(self, validated_data):
-        origin_data = validated_data.pop('origin', None)
-        if origin_data:
-            origin_serializer = LocationSerializer(data=origin_data)
-            origin_serializer.is_valid()
-            origin_object = origin_serializer.save()
-
-        destination_data = validated_data.pop('origin', None)
-        if destination_data:
-            destination_serializer = LocationSerializer(data=destination_data)
-            destination_serializer.is_valid()
-            destination_object = destination_serializer.save()
-
+        user = self.context['request'].user
         flight = Flight.objects.create(
-            origin=origin_object,
-            destination=destination_object,
+            created_by=user,
             **validated_data
         )
         flight.save()
@@ -46,19 +94,6 @@ class FlightSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        origin_data = validated_data.pop('origin', None)
-        if origin_data:
-            origin_serializer = LocationSerializer(instance.origin, data=origin_data)
-            origin_serializer.is_valid()
-            instance.origin = origin_serializer.save()
-
-        destination_data = validated_data.pop('origin', None)
-        if destination_data:
-            destination_serializer = LocationSerializer(
-                instance.destination, data=destination_data)
-            destination_serializer.is_valid()
-            instance.destination = destination_serializer.save()
-
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 

@@ -8,7 +8,8 @@ API_VERSION = 1
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^v{}/auth/'.format(API_VERSION), include(('authentication.urls', 'authentication'), namespace='authentication'))
+    url(r'^v{}/auth/'.format(API_VERSION), include(('authentication.urls', 'authentication'), namespace='authentication')),
+    url(r'^v{}/'.format(API_VERSION), include(('flights.urls', 'flights'), namespace='flights')),
 ]
 
 
