@@ -8,12 +8,12 @@ from flights.serializers import (
     FlightSlimReadOnlySerializer,
     FlightEmployeeReadOnlySerializer,
 )
-from permissions import IsAuthenticatedUser
+from flights.permissions import FlightsPermissions
 
 
 class FlightViewSet(viewsets.ModelViewSet):
     queryset = Flight.objects.all()
-    permission_classes = (IsAuthenticatedUser,)
+    permission_classes = (FlightsPermissions,)
 
     def get_queryset(self):
         return super().get_queryset()
