@@ -20,8 +20,10 @@ class LocationSerializer(serializers.ModelSerializer):
         try:
             # check if such a location already exists
             # raise an exception if it exists
-            Location.objects.get(country=country, city=city, airport=airport)
-            raise serializers.ValidationError("Location already exists, kindly use existing location.")
+            Location.objects.get(
+                country=country.capitalize(), city=city.capitalize(), airport=airport.capitalize())
+            raise serializers.ValidationError(
+                "Location already exists, kindly use existing location.")
         except Location.DoesNotExist:
             # continue with action if location does not exist.
             pass
@@ -102,8 +104,40 @@ class FlightCreateSerializer(serializers.ModelSerializer):
 
 
 class SeatSerializer(serializers.ModelSerializer):
+    flight = serializers.SlugRelatedField(
+        many=False, slug_field='name', read_only=True)
 
     class Meta:
         model = Seat
-        fields = '__all__'
+        fields = ('id', 'class_group', 'letter', 'row', 'booked', 'flight')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+    def validate(self, attrs):
+        flight = self.context['flight']
+        row = attrs.get('row')
+        letter = attrs.get('letter')
+        try:
+            # check if seat had been created before
+            # raise an exception if it exists
+            Seat.objects.get(flight=flight, row=row, letter=letter)
+            raise serializers.ValidationError("Seat already exists.")
+        except Seat.DoesNotExist:
+            # continue with action if seat does not exist.
+            pass
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        flight = self.context['flight']
+        seat = Seat.objects.create(
+            flight=flight,
+            **validated_data
+        )
+        return seat
+
+
+class FlightSeatsViewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Seat
+        fields = ('id', 'class_group', 'seat', 'booked')
         read_only_fields = ('id', 'created_at', 'updated_at')

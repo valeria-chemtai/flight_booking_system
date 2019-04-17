@@ -8,4 +8,14 @@ urlpatterns = [
         actions={'post': 'create', 'get': 'list'}), name='flights-list'),
     url(r'^flights/(?P<pk>[0-9]+)/$', views.FlightViewSet.as_view(
         actions={'get': 'retrieve', 'put': 'update'}), name='flight-detail'),
+    url(r'^allowed-destinations/$', views.LocationViewSet.as_view(
+        actions={'post': 'create', 'get': 'list'}), name='destination-list'),
+    url(r'^allowed-destinations/(?P<pk>[0-9]+)/$', views.LocationViewSet.as_view(
+        actions={'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}),
+        name='destination-detail'),
+    url(r'^flights/(?P<flight_pk>[0-9]+)/seats/$', views.SeatViewset.as_view(
+        actions={'post': 'create', 'get': 'list'}), name='flight-seats-list'),
+    url(r'^flights/(?P<flight_pk>[0-9]+)/seats/(?P<pk>[0-9]+)/$', views.SeatViewset.as_view(
+        actions={'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}),
+        name='flight-seat-detail'),
 ]

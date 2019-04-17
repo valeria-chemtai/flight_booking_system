@@ -15,6 +15,7 @@ class Location(BaseModel):
         # capitalize country and city.
         self.country = self.country.capitalize()
         self.city = self.city.capitalize()
+        self.airport = self.airport.capitalize()
         return super(Location, self).save(force_insert=force_insert, force_update=force_update,
                                           using=using, update_fields=update_fields)
 
@@ -65,6 +66,9 @@ class Seat(SoftDeleteModel):
     booked = models.BooleanField(null=False, default=False)
     flight = models.ForeignKey('Flight', null=False, blank=False, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ('letter', 'row', 'flight')
+
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         # uppercase letter.
@@ -72,5 +76,6 @@ class Seat(SoftDeleteModel):
         return super(Seat, self).save(force_insert=force_insert, force_update=force_update,
                                       using=using, update_fields=update_fields)
 
-    def __str__(self):
+    @property
+    def seat(self):
         return str(self.row) + self.letter

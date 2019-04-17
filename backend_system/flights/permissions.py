@@ -16,6 +16,6 @@ class FlightsPermissions(IsAuthenticatedUser):
                 return request.user.is_staff
 
             if view.action == 'destroy':
-                return (request.user.is_staff and request.user.is_admin)
+                return (request.user.is_staff and request.user.is_superuser)
             return True
         return False
