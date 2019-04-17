@@ -34,6 +34,10 @@ class Flight(SoftDeleteModel):
     created_by = models.ForeignKey(
         'authentication.user', null=False, blank=False, related_name='flights',
         on_delete=models.DO_NOTHING)
+    status = models.CharField(max_length=25, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('name', 'departure_time')
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
@@ -67,3 +71,6 @@ class Seat(SoftDeleteModel):
         self.letter = self.letter.upper()
         return super(Seat, self).save(force_insert=force_insert, force_update=force_update,
                                       using=using, update_fields=update_fields)
+
+    def __str__(self):
+        return str(self.row) + self.letter

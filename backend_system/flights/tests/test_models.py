@@ -1,6 +1,7 @@
 from django.db.utils import IntegrityError
 from django.test import TestCase
 
+from authentication.models import User
 from flights.models import Location, Flight, Seat
 
 
@@ -27,9 +28,12 @@ class LocationTestCase(TestCase):
 
 class FlightTestCase(TestCase):
     def setUp(self):
+        self.user = User.objects.create_user(
+            email='flightsystem@email.com', password='flightpassword')
         self.flight = Flight.objects.create(
             name='FLIGHT1',
-            gate='G20'
+            gate='G20',
+            created_by=self.user
         )
 
     def test_flight_created_successfully(self):
@@ -56,9 +60,12 @@ class FlightTestCase(TestCase):
 
 class SeatTestCase(TestCase):
     def setUp(self):
+        self.user = User.objects.create_user(
+            email='flightsystem@email.com', password='flightpassword')
         self.flight = Flight.objects.create(
             name='FLIGHT1',
-            gate='G20'
+            gate='G20',
+            created_by=self.user
         )
 
         self.seat = Seat.objects.create(letter='A', row='1', flight=self.flight)
