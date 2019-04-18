@@ -161,6 +161,35 @@ class LocationViewSetTestCase(APITestCase):
             self.assertEqual(response5.data['airport'], response2.data['airport'])
             self.assertNotEqual(response5.data['airport'], 'Try')
 
+    def test_delete_location(self):
+        """Test delete location"""
+        # create location
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data)
+        self.assertEqual(response.status_code, 201)
+        detail_url = reverse('flights:destination-detail', kwargs={'pk': response.data['id']})
+        # test normal users can not delete location
+        self.client.force_authenticate(user=self.normal_user)
+        response1 = self.client.delete(detail_url, format='json')
+        self.assertEqual(response1.status_code, 403)
+        self.assertEqual(response1.data['error'], 'PermissionDenied')
+        # test staff not superuser cannot delete location
+        self.client.force_authenticate(user=self.staff_user)
+        response2 = self.client.delete(detail_url, format='json')
+        self.assertEqual(response2.status_code, 403)
+        self.assertEqual(response2.data['error'], 'PermissionDenied')
+
+        # test location not deleted by normal user or staff
+        self.assertEqual(Location.objects.all().count(), 1)
+
+        # test superuser cannot delete location
+        self.client.force_authenticate(user=self.super_user)
+        response3 = self.client.delete(detail_url, format='json')
+        self.assertEqual(response3.status_code, 204)
+
+        # test location indeed deleted by superuser
+        self.assertEqual(Location.objects.all().count(), 0)
+
 
 class FlightViewSetTestCase(APITestCase):
     """Test FlightViewSet TestCase."""
