@@ -201,7 +201,7 @@ class FlightViewSetTestCase(APITestCase):
             }
         }
 
-    def test_add_flight(self):
+    def test_add_flight_functionality(self):
         """Test add flight functionality."""
         with self.subTest('Test normal user cannot add flight.'):
             self.client.force_authenticate(user=self.normal_user)
