@@ -5,8 +5,7 @@ from rest_framework import status
 
 from flights.models import Flight, Location, Seat
 from flights.serializers import (
-    FlightCreateSerializer,
-    FlightSlimReadOnlySerializer,
+    FlightSerializer,
     FlightEmployeeReadOnlySerializer,
     FlightSeatsViewSerializer,
     LocationSerializer,
@@ -23,12 +22,9 @@ class FlightViewSet(viewsets.ModelViewSet):
         return super().get_queryset()
 
     def get_serializer_class(self):
-        if self.action == 'list':
-            if self.request.user.is_staff:
-                return FlightEmployeeReadOnlySerializer
-            else:
-                return FlightSlimReadOnlySerializer
-        return FlightCreateSerializer
+        if self.action == 'list' and self.request.user.is_staff:
+            return FlightEmployeeReadOnlySerializer
+        return FlightSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -80,7 +76,6 @@ class SeatViewset(viewsets.ModelViewSet):
         if rows and letters:
             # iterate through the lists provided to create seats.
             data = {}
-            data['flight'] = request.data.get('flight')
             data['class_group'] = request.data.get('class_group', 'Economy')
             for letter in letters:
                 for row in rows:
@@ -89,7 +84,7 @@ class SeatViewset(viewsets.ModelViewSet):
                     serializer = self.get_serializer(data=data)
                     serializer.is_valid(raise_exception=True)
                     serializer.save()
-            message = {'message': 'Seats created successfully.'}
+            message = {'message': 'Seats for given row(s) and letter(s) created successfully.'}
             return Response(data=message, status=status.HTTP_201_CREATED)
         else:
             serializer = self.get_serializer(data=request.data)

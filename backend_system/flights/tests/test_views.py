@@ -53,7 +53,6 @@ class LocationViewSetTestCase(APITestCase):
             self.client.force_authenticate(user=self.super_user)
             response = self.client.post(self.url, data=data)
             self.assertEqual(response.status_code, 201)
-            self.assertEqual(response.status_code, 201)
             self.assertEqual(response.data['country'], 'Kenya')
             self.assertEqual(response.data['city'], 'Nairobi')
             self.assertEqual(response.data['airport'], 'Wilson')
@@ -164,7 +163,112 @@ class LocationViewSetTestCase(APITestCase):
 
 
 class FlightViewSetTestCase(APITestCase):
-    pass
+    """Test FlightViewSet TestCase."""
+    def setUp(self):
+        self.normal_user = User.objects.create_user(
+            email='normal@email.com', password='flightpassword')
+        self.staff_user = User.objects.create_user(
+            email='staff@email.com', password='flightpassword')
+        self.staff_user.is_staff = True
+        self.staff_user.save()
+        self.super_user = User.objects.create_superuser(
+            email='admin@email.com', password='flightpassword')
+        self.url = reverse('flights:flight-list')
+
+        self.location1 = Location.objects.create(
+            country='Kenya',
+            city='Nairobi',
+            airport='JKIA'
+        )
+        self.location2 = Location.objects.create(
+            country='France',
+            city='Paris',
+            airport='gaulle'
+        )
+        self.data = {
+            'name': 'Flight valeria',
+            'origin': {
+                'id': self.location1.id,
+                'country': self.location1.country,
+                'city': self.location1.city,
+                'airport': self.location1.airport
+            },
+            'destination': {
+                'id': self.location2.id,
+                'country': self.location2.country,
+                'city': self.location2.city,
+                'airport': self.location2.airport
+            }
+        }
+
+    def test_add_flight(self):
+        """Test add flight functionality."""
+        with self.subTest('Test normal user cannot add flight.'):
+            self.client.force_authenticate(user=self.normal_user)
+            response = self.client.post(self.url, data=self.data, format='json')
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.data['error'], 'PermissionDenied')
+            self.assertEqual(response.data['error_description'],
+                             'You do not have permission to perform this action.')
+
+        with self.subTest('Test a staff can add flight.'):
+            self.client.force_authenticate(user=self.staff_user)
+            response = self.client.post(self.url, data=self.data, format='json')
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual(response.data['name'], 'FLIGHT VALERIA')
+            self.assertEqual(Flight.objects.all().count(), 1)
+
+        with self.subTest('Test a super user can add location.'):
+            self.data['name'] = 'flight1'
+            self.client.force_authenticate(user=self.super_user)
+            response = self.client.post(self.url, data=self.data, format='json')
+            self.assertEqual(response.status_code, 201)
+            self.assertEqual(response.data['name'], 'FLIGHT1')
+            self.assertEqual(Location.objects.all().count(), 2)
+
+    def test_cannot_add_duplicate_flight_no_departure_time(self):
+        """Flight with similar name and departure time to existing one cannot be added."""
+        self.client.force_authenticate(user=self.staff_user)
+        response1 = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response1.status_code, 201)
+        response2 = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response2.status_code, 400)
+        self.assertEqual(response2.data['error'], 'ValidationError')
+        self.assertIn(
+            'Flight with same name exists, schedule existing flight.',
+            str(response2.data['error_description']))
+        # confirm we just have one Flight in the system
+        self.assertEqual(Flight.objects.all().count(), 1)
+
+    def test_flight_origin_and_destination_should_not_be_similar(self):
+        """Test that flight origin and destination have to be different."""
+        self.data['destination'] = self.data['origin']
+        self.client.force_authenticate(user=self.staff_user)
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data['error'], 'ValidationError')
+        self.assertIn(
+            'Flight origin and destination can not be the same.',
+            str(response.data['error_description']))
+        # confirm flight was not created
+        self.assertEqual(Flight.objects.all().count(), 0)
+
+    def test_invalid_origin_or_destination_given(self):
+        """Test flight not created invalid location."""
+        self.data['destination'] = {
+            'country': 'countr1',
+            'city': 'city1',
+            'airport': 'airport1'
+        }
+        self.client.force_authenticate(user=self.staff_user)
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data['error'], 'ValidationError')
+        self.assertIn(
+            'Origin/destination given is not in the allowed destinations.',
+            str(response.data['error_description']))
+        # confirm flight was not created
+        self.assertEqual(Flight.objects.all().count(), 0)
 
 
 class SeatViewsetTestCase(APITestCase):

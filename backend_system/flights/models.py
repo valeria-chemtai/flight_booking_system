@@ -13,9 +13,9 @@ class Location(BaseModel):
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         # capitalize country and city.
-        self.country = self.country.capitalize()
-        self.city = self.city.capitalize()
-        self.airport = self.airport.capitalize()
+        self.country = self.country.title()
+        self.city = self.city.title()
+        self.airport = self.airport.title()
         return super(Location, self).save(force_insert=force_insert, force_update=force_update,
                                           using=using, update_fields=update_fields)
 
@@ -24,13 +24,13 @@ class Location(BaseModel):
 
 
 class Flight(SoftDeleteModel):
-    name = models.CharField(max_length=60, null=False, blank=False, unique=True)
+    name = models.CharField(max_length=60, null=False, blank=False, unique=False)
     origin = models.ForeignKey(
         'Location', null=True, related_name='flight_origin', on_delete=models.DO_NOTHING)
     destination = models.ForeignKey(
         'Location', related_name='flight_destination', null=True, on_delete=models.DO_NOTHING)
-    departure_time = models.DateTimeField(null=True)
-    arrival_time = models.DateTimeField(null=True)
+    departure_time = models.DateTimeField(null=True, blank=True)
+    arrival_time = models.DateTimeField(null=True, blank=True)
     gate = models.CharField(max_length=60, null=True, blank=True)
     created_by = models.ForeignKey(
         'authentication.user', null=False, blank=False, related_name='flights',

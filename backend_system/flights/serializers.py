@@ -14,33 +14,27 @@ class LocationSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at')
 
     def validate(self, attrs):
-        country = attrs.get('country')
-        city = attrs.get('city')
-        airport = attrs.get('airport')
+        country = attrs.get('country').title()
+        city = attrs.get('city').title()
+        airport = attrs.get('airport').title()
         try:
             # check if such a location already exists
             # raise an exception if it exists
-            Location.objects.get(
-                country=country.capitalize(), city=city.capitalize(), airport=airport.capitalize())
+            Location.objects.get(country=country, city=city, airport=airport)
             raise serializers.ValidationError(
-                "Location already exists, kindly use existing location.")
+                'Location already exists, kindly use existing location.')
         except Location.DoesNotExist:
             # continue with action if location does not exist.
             pass
         return attrs
 
 
-class FlightSlimReadOnlySerializer(serializers.ModelSerializer):
-    origin = LocationSerializer(read_only=True)
-    destination = LocationSerializer(read_only=True)
-    departure_time = serializers.DateTimeField(allow_null=True, required=False)
-    arrival_time = serializers.DateTimeField(allow_null=True, required=False)
+class LocationSlimSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Flight
-        fields = ('id', 'name', 'origin', 'destination', 'departure_time', 'arrival_time',
-                  'gate')
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        model = Location
+        exclude = ('id', 'created_at', 'updated_at')
+        read_only_fields = ('airport', 'city', 'country')
 
 
 class FlightEmployeeReadOnlySerializer(serializers.ModelSerializer):
@@ -57,17 +51,11 @@ class FlightEmployeeReadOnlySerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at')
 
 
-class FlightCreateSerializer(serializers.ModelSerializer):
-    origin = serializers.SlugRelatedField(
-        queryset=Location.objects.all(),
-        many=False, slug_field='airport', allow_null=True, required=False
-    )
-    destination = serializers.SlugRelatedField(
-        queryset=Location.objects.all(),
-        many=False, slug_field='airport', allow_null=True, required=False
-    )
-    departure_time = serializers.DateTimeField(allow_null=True, required=False)
-    arrival_time = serializers.DateTimeField(allow_null=True, required=False)
+class FlightSerializer(serializers.ModelSerializer):
+    origin = LocationSlimSerializer(read_only=True)
+    destination = LocationSlimSerializer(read_only=True)
+    departure_time = serializers.DateTimeField(allow_null=True, default=None)
+    arrival_time = serializers.DateTimeField(required=False, default=None)
 
     class Meta:
         model = Flight
@@ -75,13 +63,56 @@ class FlightCreateSerializer(serializers.ModelSerializer):
                   'gate')
         read_only_fields = ('id', 'created_at', 'updated_at')
 
+    def to_internal_value(self, data):
+        internal_value = super(FlightSerializer, self).to_internal_value(data)
+        internal_value['origin'] = data.get('origin')
+        internal_value['destination'] = data.get('destination')
+        return internal_value
+
     def validate(self, attrs):
-        origin = attrs.get('origin')
-        destination = attrs.get('destination')
+        origin_data = attrs.get('origin')
+        destination_data = attrs.get('destination')
+        name = attrs.get('name').upper()
+        departure_time = attrs.get('departure_time')
+        try:
+            if name and not departure_time:
+                # if flight with given name exists but its not scheduled,
+                # raise exception
+                Flight.objects.get(name=name)
+                raise serializers.ValidationError(
+                    'Flight with same name exists, schedule existing flight.')
+            if name and departure_time:
+                # inform user if flight with given name exists and departure time has been set
+                Flight.objects.get(name=name, departure_time=departure_time)
+                raise serializers.ValidationError(
+                    'Flight with same name is already scheduled for a trip at same departure time.')
+        except Flight.DoesNotExist:
+                # continue with action if flight does not exist.
+                pass
 
-        if (origin and destination) and (origin == destination):
-            raise serializers.ValidationError("Flight origin and destination can not be the same.")
-
+        if (origin_data and destination_data):
+            try:
+                # check if origin and destination already exists
+                # raise an exception if it doesn't
+                origin_obj = Location.objects.get(
+                    country=origin_data.get('country').title(),
+                    city=origin_data.get('city').title(),
+                    airport=origin_data.get('airport').title()
+                )
+                destination_obj = Location.objects.get(
+                    country=destination_data.get('country').title(),
+                    city=destination_data.get('city').title(),
+                    airport=destination_data.get('airport').title()
+                )
+                if (origin_obj == destination_obj):
+                    raise serializers.ValidationError(
+                        'Flight origin and destination can not be the same.')
+            except Location.DoesNotExist:
+                raise serializers.ValidationError(
+                    'Origin/destination given is not in the allowed destinations.')
+        # pass objects to validated_data
+        attrs['origin'] = origin_obj
+        attrs['destination'] = destination_obj
         return attrs
 
     @transaction.atomic
@@ -119,7 +150,7 @@ class SeatSerializer(serializers.ModelSerializer):
         try:
             # check if seat had been created before
             # raise an exception if it exists
-            Seat.objects.get(flight=flight, row=row, letter=letter)
+            Seat.objects.get(flight=flight, row=row, letter=letter.upper())
             raise serializers.ValidationError("Seat already exists.")
         except Seat.DoesNotExist:
             # continue with action if seat does not exist.
