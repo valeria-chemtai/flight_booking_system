@@ -55,7 +55,7 @@ class FlightSerializer(serializers.ModelSerializer):
     origin = LocationSlimSerializer(read_only=True)
     destination = LocationSlimSerializer(read_only=True)
     departure_time = serializers.DateTimeField(allow_null=True, default=None)
-    arrival_time = serializers.DateTimeField(required=False, default=None)
+    arrival_time = serializers.DateTimeField(allow_null=True, default=None)
 
     class Meta:
         model = Flight
@@ -74,6 +74,7 @@ class FlightSerializer(serializers.ModelSerializer):
         destination_data = attrs.get('destination')
         name = attrs.get('name').upper()
         departure_time = attrs.get('departure_time')
+        arrival_time = attrs.get('arrival_time')
         try:
             if name and not departure_time:
                 # if flight with given name exists but its not scheduled,
@@ -90,7 +91,7 @@ class FlightSerializer(serializers.ModelSerializer):
                 # continue with action if flight does not exist.
                 pass
 
-        if (origin_data and destination_data):
+        if origin_data:
             try:
                 # check if origin and destination already exists
                 # raise an exception if it doesn't
@@ -99,20 +100,36 @@ class FlightSerializer(serializers.ModelSerializer):
                     city=origin_data.get('city').title(),
                     airport=origin_data.get('airport').title()
                 )
+                # pass origin object to validated_data
+                attrs['origin'] = origin_obj
+            except Location.DoesNotExist:
+                raise serializers.ValidationError(
+                    'Origin given is not in the allowed destinations.')
+
+        if destination_data:
+            try:
                 destination_obj = Location.objects.get(
                     country=destination_data.get('country').title(),
                     city=destination_data.get('city').title(),
                     airport=destination_data.get('airport').title()
                 )
-                if (origin_obj == destination_obj):
-                    raise serializers.ValidationError(
-                        'Flight origin and destination can not be the same.')
+                # pass destination object to validated_data
+                attrs['destination'] = destination_obj
             except Location.DoesNotExist:
                 raise serializers.ValidationError(
-                    'Origin/destination given is not in the allowed destinations.')
-        # pass objects to validated_data
-        attrs['origin'] = origin_obj
-        attrs['destination'] = destination_obj
+                    'Destination given is not in the allowed destinations.')
+
+        # origin and destination should not be the same
+        if (attrs['origin'] and attrs['destination']) and \
+                (attrs['origin'] == attrs['destination']):
+            raise serializers.ValidationError(
+                'Flight origin and destination can not be the same.')
+
+        # departure time should not be the same as departure time.
+        if (departure_time and arrival_time) and (departure_time == arrival_time):
+            raise serializers.ValidationError(
+                'Departure time and arrival time cannot be the same.')
+
         return attrs
 
     @transaction.atomic
