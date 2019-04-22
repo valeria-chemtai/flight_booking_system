@@ -128,6 +128,69 @@ class LocationViewSetTestCase(APITestCase):
         self.assertEqual(response2.status_code, 200)
         self.assertEqual(response2.data['id'], response.data['id'])
 
+    def test_update_location(self):
+        """Test update location functionality."""
+        # create location
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data)
+        self.assertEqual(response.status_code, 201)
+        detail_url = reverse('flights:destination-detail', kwargs={'pk': response.data['id']})
+        new_data = response.data
+        with self.subTest('Test staff can update location'):
+            new_data['airport'] = 'newport'
+            # update location
+            response2 = self.client.put(detail_url, data=new_data)
+            self.assertEqual(response2.status_code, 200)
+            self.assertEqual(response2.data['airport'], 'Newport')
+
+        with self.subTest('Test update location with same data raises an error'):
+            new_data['airport'] = 'newport'
+            response3 = self.client.put(detail_url, data=new_data)
+            self.assertEqual(response3.status_code, 400)
+            self.assertIn('Location already exists, kindly use existing location', str(response3.data))
+
+        with self.subTest('Test normal user cannot update location'):
+            self.client.force_authenticate(user=self.normal_user)
+            new_data['airport'] = 'Try'
+            response4 = self.client.put(detail_url, data=new_data)
+            self.assertEqual(response4.status_code, 403)
+            self.assertEqual(response4.data['error'], 'PermissionDenied')
+            self.assertIn('You do not have permission to perform this action', str(response4.data['error_description']))
+            # confirm location airport was not changed
+            response5 = self.client.get(detail_url, data=new_data)
+            self.assertEqual(response5.status_code, 200)
+            self.assertEqual(response5.data['airport'], response2.data['airport'])
+            self.assertNotEqual(response5.data['airport'], 'Try')
+
+    def test_delete_location(self):
+        """Test delete location"""
+        # create location
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data)
+        self.assertEqual(response.status_code, 201)
+        detail_url = reverse('flights:destination-detail', kwargs={'pk': response.data['id']})
+        # test normal users can not delete location
+        self.client.force_authenticate(user=self.normal_user)
+        response1 = self.client.delete(detail_url, format='json')
+        self.assertEqual(response1.status_code, 403)
+        self.assertEqual(response1.data['error'], 'PermissionDenied')
+        # test staff not superuser cannot delete location
+        self.client.force_authenticate(user=self.staff_user)
+        response2 = self.client.delete(detail_url, format='json')
+        self.assertEqual(response2.status_code, 403)
+        self.assertEqual(response2.data['error'], 'PermissionDenied')
+
+        # test location not deleted by normal user or staff
+        self.assertEqual(Location.objects.all().count(), 1)
+
+        # test superuser can delete location
+        self.client.force_authenticate(user=self.super_user)
+        response3 = self.client.delete(detail_url, format='json')
+        self.assertEqual(response3.status_code, 204)
+
+        # test location indeed deleted by superuser
+        self.assertEqual(Location.objects.all().count(), 0)
+
 
 class FlightViewSetTestCase(APITestCase):
     """Test FlightViewSet TestCase."""
@@ -331,6 +394,89 @@ class FlightViewSetTestCase(APITestCase):
         self.assertEqual(response2.status_code, 200)
         self.assertEqual(len(response2.data), 2)
 
+    def test_update_flight(self):
+        """Test update flight functionality."""
+        # create location
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, 201)
+        self.assertIsNone(response.data['departure_time'])
+        detail_url = reverse('flights:flight-detail', kwargs={'pk': response.data['id']})
+        new_data = response.data
+        with self.subTest('Test staff can update flight.'):
+            time = timezone.now() + timezone.timedelta(hours=2)
+            new_data['departure_time'] = time
+            new_data['gate'] = '3c'
+            # update flight
+            response1 = self.client.put(detail_url, data=new_data, format='json')
+            self.assertEqual(response1.status_code, 200)
+            self.assertEqual(response1.data['departure_time'],
+                             new_data['departure_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
+            # confirm flight was updated
+            response2 = self.client.get(detail_url)
+            self.assertEqual(response2.status_code, 200)
+            self.assertEqual(response2.data['departure_time'],
+                             new_data['departure_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
+            self.assertEqual(response2.data['gate'], new_data['gate'].upper())
+
+        with self.subTest('Test update flight will fail if departure_time and arrival time is same'):
+            time = timezone.now() + timezone.timedelta(hours=2)
+            new_data['departure_time'] = time
+            new_data['arrival_time'] = time
+            response3 = self.client.put(detail_url, data=new_data, format='json')
+            self.assertEqual(response3.status_code, 400)
+            self.assertIn('Departure time and arrival time cannot be the same.',
+                          str(response3.data))
+            # confirm flight was not updated
+            response4 = self.client.get(detail_url)
+            self.assertEqual(response4.status_code, 200)
+            self.assertNotEqual(response4.data['departure_time'],
+                                new_data['departure_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
+            self.assertNotEqual(response4.data['arrival_time'],
+                                new_data['arrival_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
+
+        with self.subTest('Test normal user cannot update flight'):
+            self.client.force_authenticate(user=self.normal_user)
+            new_data['gate'] = '3a'
+            response5 = self.client.put(detail_url, data=new_data, format='json')
+            self.assertEqual(response5.status_code, 403)
+            self.assertEqual(response5.data['error'], 'PermissionDenied')
+            self.assertIn('You do not have permission to perform this action',
+                          str(response5.data['error_description']))
+            # confirm flight gate was not changed
+            response6 = self.client.get(detail_url)
+            self.assertEqual(response6.status_code, 200)
+            self.assertEqual(response6.data['gate'], response2.data['gate'])
+            self.assertNotEqual(response6.data['gate'], new_data['gate'].upper())
+
+    def test_delete_flight(self):
+        # create flight
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, 201)
+        detail_url = reverse('flights:flight-detail', kwargs={'pk': response.data['id']})
+        # test normal users can not delete flight
+        self.client.force_authenticate(user=self.normal_user)
+        response1 = self.client.delete(detail_url, format='json')
+        self.assertEqual(response1.status_code, 403)
+        self.assertEqual(response1.data['error'], 'PermissionDenied')
+        # test staff not superuser cannot delete flight
+        self.client.force_authenticate(user=self.staff_user)
+        response2 = self.client.delete(detail_url, format='json')
+        self.assertEqual(response2.status_code, 403)
+        self.assertEqual(response2.data['error'], 'PermissionDenied')
+
+        # test flight not deleted by normal user or staff
+        self.assertEqual(Flight.objects.all().count(), 1)
+
+        # test superuser can delete flight
+        self.client.force_authenticate(user=self.super_user)
+        response3 = self.client.delete(detail_url, format='json')
+        self.assertEqual(response3.status_code, 204)
+
+        # test flight indeed deleted by superuser
+        self.assertEqual(Flight.objects.all().count(), 0)
+
 
 class SeatViewsetTestCase(APITestCase):
     """SeatViewset Testcase."""
@@ -436,3 +582,80 @@ class SeatViewsetTestCase(APITestCase):
         self.client.force_authenticate(user=self.normal_user)
         response = self.client.get(self.url, format='json')
         self.assertEqual(len(response.data), 2)
+
+    def test_update_seat(self):
+        """Test seat can be updated."""
+        # create seat
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        detail_url = reverse(
+            'flights:flight-seat-detail',
+            kwargs={'flight_pk': self.flight.id, 'pk': response.data['id']}
+        )
+        new_data = response.data
+        new_data['class_group'] = 'Business'
+        with self.subTest('Test normal user cannot update flight seat information.'):
+            self.client.force_authenticate(user=self.normal_user)
+            response1 = self.client.put(detail_url, data=new_data, format='json')
+            self.assertEqual(response1.status_code, 403)
+            self.assertEqual(response1.data['error'], 'PermissionDenied')
+            # confirm seat information not changed
+            response2 = self.client.get(detail_url, format='json')
+            self.assertNotEqual(response2.data['class_group'], new_data['class_group'])
+        with self.subTest('Test staff user can update flight seat information.'):
+            self.client.force_authenticate(user=self.staff_user)
+            response3 = self.client.put(detail_url, data=new_data, format='json')
+            self.assertEqual(response3.status_code, 200)
+            self.assertEqual(response3.data['class_group'], new_data['class_group'])
+            # confirm seat information was changed
+            response4 = self.client.get(detail_url, format='json')
+            self.assertEqual(response4.data['class_group'], new_data['class_group'])
+
+    def test_delete_flight_seat(self):
+        """Test flight seat can be deleted."""
+        # create flight seat
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, 201)
+        detail_url = reverse(
+            'flights:flight-seat-detail',
+            kwargs={'flight_pk': self.flight.id, 'pk': response.data['id']}
+        )
+        with self.subTest('Test normal users can not delete flight seat'):
+            self.client.force_authenticate(user=self.normal_user)
+            response1 = self.client.delete(detail_url, format='json')
+            self.assertEqual(response1.status_code, 403)
+            self.assertEqual(response1.data['error'], 'PermissionDenied')
+        with self.subTest('Test staff not superuser cannot delete flight seat'):
+            self.client.force_authenticate(user=self.staff_user)
+            response2 = self.client.delete(detail_url, format='json')
+            self.assertEqual(response2.status_code, 403)
+            self.assertEqual(response2.data['error'], 'PermissionDenied')
+
+        # test flight seat not deleted by normal user or staff
+        self.assertEqual(Seat.objects.all().count(), 1)
+
+        with self.subTest('Test superuser can delete flight seat'):
+            self.client.force_authenticate(user=self.super_user)
+            response3 = self.client.delete(detail_url, format='json')
+            self.assertEqual(response3.status_code, 204)
+
+        # test seat indeed deleted by superuser
+        self.assertEqual(Seat.objects.all().count(), 0)
+
+    def test_delete_flight_deletes_seats(self):
+        """Test delete flight deletes seats too."""
+        # create flight seat
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, 201)
+        flight_detail_url = reverse('flights:flight-detail', kwargs={'pk': self.flight.id})
+        # confirm objects count
+        self.assertEqual(Flight.objects.all().count(), 1)
+        self.assertEqual(Seat.objects.all().count(), 1)
+        response = self.client.delete(flight_detail_url)
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(Flight.objects.all().count(), 0)
+        self.assertEqual(Seat.objects.all().count(), 0)
