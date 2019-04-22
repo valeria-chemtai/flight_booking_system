@@ -85,6 +85,49 @@ class LocationViewSetTestCase(APITestCase):
                       str(response3.data['error_description']))
         self.assertEqual(Location.objects.all().count(), count)
 
+    def test_list_locations(self):
+        """Test view all existing locations."""
+        location1 = Location.objects.create(
+            country='Kenya',
+            city='Nairobi',
+            airport='JKIA'
+        )
+        location2 = Location.objects.create(
+            country='France',
+            city='Paris',
+            airport='gaulle'
+        )
+        # test normal users can see locations
+        self.client.force_authenticate(user=self.normal_user)
+        response1 = self.client.get(self.url, format='application/json')
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(len(response1.data), 2)
+        self.assertIn(location1.city, str(response1.data))
+        self.assertIn(location2.city, str(response1.data))
+        # test staff and superusers can view locations
+        self.client.force_authenticate(user=self.staff_user)
+        response2 = self.client.get(self.url, format='application/json')
+        self.assertEqual(response2.status_code, 200)
+        self.assertEqual(len(response2.data), 2)
+
+    def test_retrieve_location(self):
+        """Test a single location can be retrieved."""
+        # create location
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data)
+        self.assertEqual(response.status_code, 201)
+        detail_url = reverse('flights:destination-detail', kwargs={'pk': response.data['id']})
+        # test normal users can retrieve location
+        self.client.force_authenticate(user=self.normal_user)
+        response1 = self.client.get(detail_url, format='application/json')
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(response1.data['id'], response.data['id'])
+        # test staff and superusers can view location
+        self.client.force_authenticate(user=self.staff_user)
+        response2 = self.client.get(detail_url, format='application/json')
+        self.assertEqual(response2.status_code, 200)
+        self.assertEqual(response2.data['id'], response.data['id'])
+
 
 class FlightViewSetTestCase(APITestCase):
     """Test FlightViewSet TestCase."""
@@ -245,6 +288,49 @@ class FlightViewSetTestCase(APITestCase):
         # confirm flight was not created
         self.assertEqual(Flight.objects.all().count(), 0)
 
+    def test_retrieve_flight(self):
+        """Test get single flight"""
+        # create flight
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, 201)
+        detail_url = reverse('flights:flight-detail', kwargs={'pk': response.data['id']})
+        # test normal users can retrieve flight
+        self.client.force_authenticate(user=self.normal_user)
+        response1 = self.client.get(detail_url, format='json')
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(response1.data['id'], response.data['id'])
+        # test staff and superusers can retrieve flight
+        self.client.force_authenticate(user=self.staff_user)
+        response2 = self.client.get(detail_url, format='json')
+        self.assertEqual(response2.status_code, 200)
+        self.assertEqual(response2.data['id'], response.data['id'])
+
+    def test_list_available_flights(self):
+        """Test list all flights."""
+        flight1 = Flight.objects.create(
+            name='FLIGHT1',
+            gate='G20',
+            created_by=self.super_user
+        )
+        flight2 = Flight.objects.create(
+            name='FLIGHT2',
+            gate='G20',
+            created_by=self.super_user
+        )
+        # test normal users can see available flights
+        self.client.force_authenticate(user=self.normal_user)
+        response1 = self.client.get(self.url, format='application/json')
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(len(response1.data), 2)
+        self.assertIn(flight1.name, str(response1.data))
+        self.assertIn(flight2.name, str(response1.data))
+        # test staff and superusers can view locations
+        self.client.force_authenticate(user=self.staff_user)
+        response2 = self.client.get(self.url, format='application/json')
+        self.assertEqual(response2.status_code, 200)
+        self.assertEqual(len(response2.data), 2)
+
 
 class SeatViewsetTestCase(APITestCase):
     """SeatViewset Testcase."""
@@ -321,3 +407,32 @@ class SeatViewsetTestCase(APITestCase):
         Seat.objects.get(row=1, letter='B', class_group='Business')
         Seat.objects.get(row=2, letter='A', class_group='Business')
         Seat.objects.get(row=2, letter='B', class_group='Business')
+
+    def test_retrieve_seat(self):
+        """Test users can retrieve a given seat for a given flight."""
+        # create seat
+        self.client.force_authenticate(user=self.super_user)
+        response = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response.status_code, 201)
+        detail_url = reverse(
+            'flights:flight-seat-detail',
+            kwargs={'flight_pk': self.flight.id, 'pk': response.data['id']}
+        )
+        with self.subTest('Test normal user can retrieve flight seat.'):
+            self.client.force_authenticate(user=self.normal_user)
+            response1 = self.client.get(detail_url, format='json')
+            self.assertEqual(response1.status_code, 200)
+            self.assertEqual(response1.data['id'], response.data['id'])
+        with self.subTest('Test staff user can retrieve flight seat.'):
+            self.client.force_authenticate(user=self.staff_user)
+            response2 = self.client.get(detail_url, format='json')
+            self.assertEqual(response2.status_code, 200)
+            self.assertEqual(response2.data['id'], response.data['id'])
+
+    def test_list_seats_for_particular_flight(self):
+        """Test users can see all seats available for a given flight."""
+        Seat.objects.create(letter='A', row='1', flight=self.flight)
+        Seat.objects.create(letter='A', row='2', flight=self.flight)
+        self.client.force_authenticate(user=self.normal_user)
+        response = self.client.get(self.url, format='json')
+        self.assertEqual(len(response.data), 2)
