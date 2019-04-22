@@ -167,8 +167,10 @@ class SeatSerializer(serializers.ModelSerializer):
         try:
             # check if seat had been created before
             # raise an exception if it exists
-            Seat.objects.get(flight=flight, row=row, letter=letter.upper())
-            raise serializers.ValidationError("Seat already exists.")
+            seat = Seat.objects.get(flight=flight, row=row, letter=letter.upper())
+            # this helps to cater for update functionality too
+            if self.instance != seat:
+                raise serializers.ValidationError("Seat already exists.")
         except Seat.DoesNotExist:
             # continue with action if seat does not exist.
             pass
