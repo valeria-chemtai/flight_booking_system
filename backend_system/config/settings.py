@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     'django_extensions',
     'rest_framework',
     'authentication',
+    'common',
+    'flights',
 ]
 
 MIDDLEWARE = [

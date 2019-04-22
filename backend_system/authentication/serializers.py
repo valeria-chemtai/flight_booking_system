@@ -6,6 +6,18 @@ from rest_framework.validators import UniqueValidator
 from authentication.models import User
 
 
+class BasicUserSerializer(serializers.Serializer):
+    """User serializer to be used in model relations."""
+    email = serializers.EmailField(read_only=True)
+    first_name = serializers.CharField(
+        max_length=30, allow_null=False, allow_blank=False, required=True)
+    last_name = serializers.CharField(
+        max_length=30, allow_null=False, allow_blank=False, required=True)
+
+    class Meta:
+        fields = ('first_name', 'last_name')
+
+
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         validators=[UniqueValidator(queryset=User.objects.all(),
