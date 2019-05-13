@@ -11,10 +11,10 @@ class Booking(SoftDeleteModel):
     travel_date = models.DateField(null=True, blank=True)
     booked_by = models.ForeignKey(
         'authentication.user', null=False, blank=False, related_name='bookings',
-        on_delete=models.DO_NOTHING)
+        on_delete=models.CASCADE)
     flight = models.ForeignKey(
-        'flights.Flight', null=False, blank=False,
+        'flights.Flight', null=True, blank=True,
         related_name='booking', on_delete=models.DO_NOTHING)
     seat = models.ForeignKey(
-        'flights.Seat', null=False, blank=False,
+        'flights.Seat', null=True, blank=True,
         related_name='booking', on_delete=models.DO_NOTHING)
