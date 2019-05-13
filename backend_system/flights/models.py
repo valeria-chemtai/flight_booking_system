@@ -78,4 +78,4 @@ class Seat(SoftDeleteModel):
 
     @property
     def seat(self):
-        return str(self.row) + self.letter
+        return str(self.row) + self.letter + ',' + self.class_group
