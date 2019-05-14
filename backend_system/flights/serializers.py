@@ -186,6 +186,13 @@ class SeatSerializer(serializers.ModelSerializer):
         return seat
 
 
+class SeatSlimSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Seat
+        fields = ('id', 'class_group', 'letter', 'row', 'booked')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
 class FlightSeatsViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Seat
