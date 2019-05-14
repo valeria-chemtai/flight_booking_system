@@ -34,6 +34,20 @@ class FlightViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
+    @detail_route(methods=['POST'], permission_classes=[FlightsPermissions], url_path='assign-flight-to-bookings')
+    def assign_flight_to_bookings(self, request, *args, **kwargs):
+        flight = self.get_object()
+        # get total number of seats available
+        total_flight_seats = Seat.objects.filter(flight=flight, booked=False).count()
+        # fetch users to assign depending on the number of seats available
+        bookings = Booking.filter(
+            travel_date=flight.departure_time, flight=None).order_by('created_at')[:total_flight_seats]
+        for booking in bookings:
+            booking.flight = flight
+            booking.save()
+            # send user email notifying them to select seats
+        return Response(status=status.HTTP_200_OK)
+
 
 class LocationViewSet(viewsets.ModelViewSet):
     queryset = Location.objects.all()
