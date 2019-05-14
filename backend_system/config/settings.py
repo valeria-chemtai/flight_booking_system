@@ -56,7 +56,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    # 'EXCEPTION_HANDLER': 'exception_handler.exception_handler'
+    'EXCEPTION_HANDLER': 'exception_handler.exception_handler'
 }
 
 ROOT_URLCONF = 'config.urls'
