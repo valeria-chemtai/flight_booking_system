@@ -9,6 +9,7 @@ from flights.serializers import (
     FlightSerializer,
     FlightSeatsViewSerializer,
     LocationSlimSerializer,
+    SeatSlimSerializer,
 )
 
 
@@ -39,9 +40,7 @@ class BookingCreateSerializer(serializers.ModelSerializer):
     flight = serializers.SlugRelatedField(
         queryset=Flight.objects.all(),
         many=False, slug_field='name', allow_null=True, required=False)
-    seat = serializers.SlugRelatedField(
-        queryset=Seat.objects.all(),
-        many=False, slug_field='seat', allow_null=True, required=False)
+    seat = SeatSlimSerializer(allow_null=True, default=None)
 
     class Meta:
         model = Booking
@@ -53,6 +52,7 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         internal_value = super(BookingCreateSerializer, self).to_internal_value(data)
         internal_value['origin'] = data.get('origin')
         internal_value['destination'] = data.get('destination')
+        internal_value['seat'] = data.get('seat')
         return internal_value
 
     def validate(self, attrs):
@@ -60,7 +60,7 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         destination_data = attrs.get('destination')
         flight = attrs.get('flight')
         travel_date = attrs.get('travel_date')
-        seat = attrs.get('seat')
+        seat_data = attrs.get('seat')
         if origin_data:
             try:
                 # check if origin and destination already exists
@@ -97,15 +97,42 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         # make sure users flight choice is okay
         viable_flights = Flight.objects.filter(
             origin=attrs.get('origin'), destination=attrs.get('destination'))
-        if flight not in viable_flights and (flight.departure_time.date() != travel_date):
-            raise serializers.ValidationError(
-                'Invalid flight choosen for booking information given.')
+        if flight:
+            if flight not in viable_flights:
+                raise serializers.ValidationError(
+                    'Invalid flight choosen for booking information; origin/destination, given.')
+            if flight.departure_time and (flight.departure_time.date() != travel_date):
+                raise serializers.ValidationError(
+                    'Invalid flight choosen for booking information; travel_date, given.')
         # make sure users flight seat choice is valid
-        viable_seats = Seat.objects.filter(
-            flight=flight, class_group=seat.class_group).exclude(booked=True)
-        if seat not in viable_seats:
-            raise serializers.ValidationError(
-                'Invalid seat choice.')
+        if seat_data:
+            try:
+                seat_obj = Seat.objects.get(
+                    flight=flight, row=seat_data.get('row'),
+                    letter=seat_data.get('letter').upper())
+                attrs['seat'] = seat_obj
+            except Seat.objects.DoesNotExist:
+                raise serializers.ValidationError(
+                    'Invalid seat choice.')
+        if attrs['seat']:
+            if self.context['request']._request.method == 'POST':
+                viable_seats = Seat.objects.filter(
+                    flight=flight, class_group=attrs['seat'].class_group).exclude(booked=True)
+                if attrs['seat'] not in viable_seats:
+                    raise serializers.ValidationError(
+                        'Invalid seat choice.')
+            if self.context['request']._request.method == 'PUT':
+                if self.instance.seat and (self.instance.seat != attrs['seat']):
+                    viable_seats = Seat.objects.filter(
+                        flight=flight, class_group=attrs['seat'].class_group).exclude(booked=True)
+                    if attrs['seat'] not in viable_seats:
+                        raise serializers.ValidationError('Invalid seat choice.')
+                    # set initially booked seat to not booked
+                    self.instance.seat.booked = False
+                    self.instance.seat.save()
+            # set seat to booked
+            attrs['seat'].booked = True
+            attrs['seat'].save()
         return attrs
 
     @transaction.atomic
@@ -115,5 +142,12 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             booked_by=user,
             **validated_data
         )
-        booking.save()
         return booking
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
