@@ -152,7 +152,7 @@ class UserProfileViewsetTestCase(APITestCase):
             'is_active': self.user.is_active,
             'is_staff': self.user.is_staff,
             'is_superuser': self.user.is_superuser,
-            'avatar': self.user.avatar
+            'passport_photo': self.user.passport_photo
         }
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
