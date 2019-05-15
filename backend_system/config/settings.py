@@ -134,6 +134,9 @@ USE_L10N = True
 
 USE_TZ = True
 
+# POSTMARK TOKEN
+POSTMARK_TOKEN = env.str('POSTMARK_TOKEN')
+POSTMARK_SENDER_EMAIL = env.str('POSTMARK_SENDER_EMAIL')
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
