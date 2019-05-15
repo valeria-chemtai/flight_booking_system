@@ -4,6 +4,8 @@ import os
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models, transaction
 
+from common.models import SoftDeleteModel
+
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -37,7 +39,7 @@ class UserManager(BaseUserManager):
         return self._create_user(email=email, password=password, **extra_fields)
 
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser, SoftDeleteModel):
     email = models.EmailField(unique=True, null=False, blank=False)
     first_name = models.CharField(max_length=30, null=False, blank=False)
     last_name = models.CharField(max_length=30, null=False, blank=False)

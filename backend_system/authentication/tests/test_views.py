@@ -142,9 +142,9 @@ class UserProfileViewsetTestCase(APITestCase):
     def test_user_retrieve(self):
         """Test retrieve user successful for authenticated user."""
         self.client.force_authenticate(user=self.user)
-        self.url = reverse('authentication:user-detail', kwargs={'pk': self.user.pk})
+        self.url = reverse('authentication:user-detail', kwargs={'pk': str(self.user.pk)})
         expected_result = {
-            'pk': self.user.pk,
+            'pk': str(self.user.pk),
             'email': self.user.email,
             'first_name': self.user.first_name,
             'last_name': self.user.last_name,
@@ -152,7 +152,7 @@ class UserProfileViewsetTestCase(APITestCase):
             'is_active': self.user.is_active,
             'is_staff': self.user.is_staff,
             'is_superuser': self.user.is_superuser,
-            'passport_photo': self.user.passport_photo
+            'passport_photo': self.user.passport_photo,
         }
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
