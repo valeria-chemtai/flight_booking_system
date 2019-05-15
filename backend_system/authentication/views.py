@@ -40,7 +40,7 @@ class UserSignInView(APIView):
         user = serializer.validated_data['user']
         token, _ = Token.objects.get_or_create(user=user)
         return Response({'token': token.key,
-                        'user': UserSerializer(user).data},
+                        'user': UserSerializer(user, context={'request': request}).data},
                         status=status.HTTP_200_OK)
 
 

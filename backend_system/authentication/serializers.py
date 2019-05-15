@@ -26,12 +26,12 @@ class UserSerializer(serializers.ModelSerializer):
         max_length=30, allow_null=False, allow_blank=False, required=True)
     last_name = serializers.CharField(
         max_length=30, allow_null=False, allow_blank=False, required=True)
-    avatar = serializers.ImageField(allow_null=True)
+    passport_photo = serializers.ImageField(allow_null=True)
 
     class Meta:
         model = User
         fields = ('pk', 'email', 'first_name', 'last_name', 'date_joined',
-                  'is_active', 'is_staff', 'is_superuser', 'avatar')
+                  'is_active', 'is_staff', 'is_superuser', 'passport_photo')
         read_only_fields = ('pk', 'date_joined')
     # TODO: customize update to patch instead of put
 
@@ -44,7 +44,7 @@ class UserSignupSerializer(serializers.Serializer):
         max_length=30, allow_null=False, allow_blank=True, required=True)
     last_name = serializers.CharField(
         max_length=30, allow_null=False, allow_blank=True, required=True)
-    avatar = serializers.ImageField(allow_null=True, required=False)
+    passport_photo = serializers.ImageField(allow_null=True, required=False)
     password = serializers.CharField(required=True)
 
     def create(self, validated_data):
