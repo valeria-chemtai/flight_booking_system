@@ -130,7 +130,7 @@ class UserProfileViewsetTestCase(APITestCase):
         self.url = reverse('authentication:users-list')
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data['total_count'], 2)
 
     def test_users_list_fail_unauthenticated_user(self):
         """Test list users unsuccessful for unauthenticated user."""

@@ -122,19 +122,19 @@ class LocationViewSetTestCase(APITestCase):
         with self.subTest('Test normal_user can only see her two bookings'):
             response4 = self.client.get(self.url)
             self.assertEqual(response4.status_code, 200)
-            self.assertEqual(len(response4.data), 2)
+            self.assertEqual(response4.data['total_count'], 2)
 
         self.client.force_authenticate(user=self.other_normal_user)
         with self.subTest('Test self.other_normal_user can only see her two bookings'):
             response4 = self.client.get(self.url)
             self.assertEqual(response4.status_code, 200)
-            self.assertEqual(len(response4.data), 1)
+            self.assertEqual(response4.data['total_count'], 1)
 
         self.client.force_authenticate(user=self.staff_user)
         with self.subTest('Test staff user can see all bookings'):
             response4 = self.client.get(self.url)
             self.assertEqual(response4.status_code, 200)
-            self.assertEqual(len(response4.data), 3)
+            self.assertEqual(response4.data['total_count'], 3)
 
     def test_retrieve_booking(self):
         """Test can retrieve booking."""

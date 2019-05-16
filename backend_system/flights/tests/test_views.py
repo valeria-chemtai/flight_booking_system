@@ -101,14 +101,14 @@ class LocationViewSetTestCase(APITestCase):
         self.client.force_authenticate(user=self.normal_user)
         response1 = self.client.get(self.url, format='application/json')
         self.assertEqual(response1.status_code, 200)
-        self.assertEqual(len(response1.data), 2)
+        self.assertEqual(response1.data['total_count'], 2)
         self.assertIn(location1.city, str(response1.data))
         self.assertIn(location2.city, str(response1.data))
         # test staff and superusers can view locations
         self.client.force_authenticate(user=self.staff_user)
         response2 = self.client.get(self.url, format='application/json')
         self.assertEqual(response2.status_code, 200)
-        self.assertEqual(len(response2.data), 2)
+        self.assertEqual(response2.data['total_count'], 2)
 
     def test_retrieve_location(self):
         """Test a single location can be retrieved."""
@@ -385,14 +385,14 @@ class FlightViewSetTestCase(APITestCase):
         self.client.force_authenticate(user=self.normal_user)
         response1 = self.client.get(self.url, format='application/json')
         self.assertEqual(response1.status_code, 200)
-        self.assertEqual(len(response1.data), 2)
+        self.assertEqual(response1.data['total_count'], 2)
         self.assertIn(flight1.name, str(response1.data))
         self.assertIn(flight2.name, str(response1.data))
         # test staff and superusers can view locations
         self.client.force_authenticate(user=self.staff_user)
         response2 = self.client.get(self.url, format='application/json')
         self.assertEqual(response2.status_code, 200)
-        self.assertEqual(len(response2.data), 2)
+        self.assertEqual(response2.data['total_count'], 2)
 
     def test_update_flight(self):
         """Test update flight functionality."""
@@ -581,7 +581,7 @@ class SeatViewsetTestCase(APITestCase):
         Seat.objects.create(letter='A', row='2', flight=self.flight)
         self.client.force_authenticate(user=self.normal_user)
         response = self.client.get(self.url, format='json')
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data['total_count'], 2)
 
     def test_update_seat(self):
         """Test seat can be updated."""

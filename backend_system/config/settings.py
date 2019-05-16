@@ -53,6 +53,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'authentication.backends.CustomTokenAuthentication',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'common.pagination.CustomPaginator',
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
