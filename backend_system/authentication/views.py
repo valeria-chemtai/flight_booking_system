@@ -7,6 +7,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
+from authentication import exceptions
 from authentication.models import User, Token
 from authentication.serializers import (
     UserChangePasswordSerializer,
@@ -38,7 +39,11 @@ class UserSignInView(APIView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
-        token, _ = Token.objects.get_or_create(user=user)
+        try:
+            token, _ = Token.objects.get_or_create(user=user)
+            token.validate()
+        except exceptions.AuthenticationFailedTokenExpired:
+            token = Token.objects.create(user=user)
         return Response({'token': token.key,
                         'user': UserSerializer(user, context={'request': request}).data},
                         status=status.HTTP_200_OK)

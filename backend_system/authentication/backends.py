@@ -49,6 +49,7 @@ class CustomTokenAuthentication(TokenAuthentication):
     def authenticate_credentials(self, key):
         try:
             token = Token.objects.select_related('user').get(key=key)
+            token.validate()
         except Token.DoesNotExist:
             raise exceptions.AuthenticationFailed(_('Invalid Token.'))
         if not token.user.is_active:

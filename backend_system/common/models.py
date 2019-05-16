@@ -1,18 +1,21 @@
 import datetime
 import pytz
-# import uuid
+import uuid
 
 from django.db import models
 from django.db.models.signals import post_delete, pre_delete
 
 
 class BaseModel(models.Model):
-    # id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name='ID')
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name='ID')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         abstract = True
+
+    def __str__(self):
+        return str(f'{self.__class__.__name__} ID: {self.id}')
 
 
 class SoftDeleteQuerySet(models.QuerySet):
