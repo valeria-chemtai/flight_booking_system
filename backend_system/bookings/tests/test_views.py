@@ -190,3 +190,30 @@ class LocationViewSetTestCase(APITestCase):
         self.seat2.refresh_from_db()
         self.assertEqual(self.seat1.booked, False)
         self.assertEqual(self.seat2.booked, True)
+
+    def test_view_bookings_per_travel_date(self):
+        """Test view bookings per travel date"""
+        self.url = reverse('bookings:booking-list')
+        self.client.force_authenticate(user=self.normal_user)
+        # create first booking with '2019-06-30' travel_date
+        response1 = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response1.status_code, 201)
+        # create second booking with '2019-07-01' travel_date
+        self.data.pop('flight')
+        self.data['travel_date'] = '2019-07-01'
+        response2 = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response2.status_code, 201)
+
+        # test view bookings for date 2019-06-30
+        url = self.url + '?travel_date=2019-06-30'
+        response3 = self.client.get(url)
+        self.assertEqual(response3.status_code, 200)
+        self.assertEqual(response3.data['total_count'], 1)
+        self.assertEqual(response3.data['results'][0]['travel_date'], '2019-06-30')
+
+        # test view bookings for date 2019-07-01
+        url = self.url + '?travel_date=2019-07-01'
+        response4 = self.client.get(url)
+        self.assertEqual(response4.status_code, 200)
+        self.assertEqual(response4.data['total_count'], 1)
+        self.assertEqual(response4.data['results'][0]['travel_date'], '2019-07-01')
