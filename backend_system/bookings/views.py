@@ -62,12 +62,12 @@ class FlightBookingsViewset(viewsets.ModelViewSet):
     @list_route(methods=['POST'], permission_classes=[FlightsPermissions],
                 url_path='assign-flight-to-bookings')
     def assign_flight_to_bookings(self, request, *args, **kwargs):
-        flight = self.context['flight']
+        flight = self.get_serializer_context()['flight']
         # get total number of seats available
         total_flight_seats = Seat.objects.filter(flight=flight, booked=False).count()
         # fetch users to assign depending on the number of seats available
-        bookings = Booking.filter(
-            travel_date=datetime.strptime(flight.departure_time, '%Y-%m-%d'),
+        bookings = Booking.objects.filter(
+            travel_date=flight.departure_time,
             origin=flight.origin,
             destination=flight.destination,
             flight=None).order_by('created_at')[:total_flight_seats]
@@ -75,4 +75,5 @@ class FlightBookingsViewset(viewsets.ModelViewSet):
             booking.flight = flight
             booking.save()
             # send user email notifying them to select seats
-        return Response(status=status.HTTP_200_OK)
+        message = {'message': 'Flight assigned to first bookings based on number of seats.'}
+        return Response(data=message, status=status.HTTP_200_OK)

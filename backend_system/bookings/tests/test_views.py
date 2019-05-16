@@ -9,8 +9,8 @@ from bookings.models import Booking
 from flights.models import Location, Flight, Seat
 
 
-class LocationViewSetTestCase(APITestCase):
-    """Test LocationViewset TestCase."""
+class BookingsViewSetTestCase(APITestCase):
+    """Test BookingsViewset TestCase."""
     def setUp(self):
         self.normal_user = User.objects.create_user(
             email='normal@email.com', password='flightpassword')
@@ -217,3 +217,83 @@ class LocationViewSetTestCase(APITestCase):
         self.assertEqual(response4.status_code, 200)
         self.assertEqual(response4.data['total_count'], 1)
         self.assertEqual(response4.data['results'][0]['travel_date'], '2019-07-01')
+
+
+class FlightBookingsViewsetTestCase(APITestCase):
+    """Test specific flight BookingsViewset TestCase."""
+    def setUp(self):
+        self.normal_user = User.objects.create_user(
+            email='normal@email.com', password='flightpassword')
+        self.other_normal_user = User.objects.create_user(
+            email='other.normal@email.com', password='flightpassword')
+        self.staff_user = User.objects.create_user(
+            email='staff@email.com', password='flightpassword')
+        self.staff_user.is_staff = True
+        self.staff_user.save()
+
+        self.location1 = Location.objects.create(
+            country='Kenya',
+            city='Nairobi',
+            airport='JKIA'
+        )
+        self.location2 = Location.objects.create(
+            country='France',
+            city='Paris',
+            airport='Gaulle'
+        )
+        self.flight = Flight.objects.create(
+            name='FLIGHT1',
+            gate='G20',
+            origin=self.location2,
+            destination=self.location1,
+            created_by=self.staff_user,
+            departure_time=datetime.datetime(2019, 6, 30, 7, 30, 30)
+        )
+        self.seat1 = Seat.objects.create(letter='A', row='1', flight=self.flight)
+        self.data = {
+            'origin': {
+                'country': 'France',
+                'city': 'Paris',
+                'airport': 'Gaulle'
+            },
+            'destination': {
+                'country': 'Kenya',
+                'city': 'Nairobi',
+                'airport': 'Jkia'
+            },
+            'travel_date': '2019-06-30'
+        }
+
+    def test_assign_bookings_to_flights_at_ago(self):
+        """Test mass assign flight to bookings without flights assigned."""
+        self.url = reverse('bookings:booking-list')
+        self.client.force_authenticate(user=self.normal_user)
+        # create bookings
+        response1 = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response1.status_code, 201)
+        self.client.force_authenticate(user=self.normal_user)
+        response2 = self.client.post(self.url, data=self.data, format='json')
+        self.assertEqual(response2.status_code, 201)
+
+        # confirm bookings created don't have flights assigned
+        booking1 = Booking.objects.get(id=response1.data['id'])
+        booking2 = Booking.objects.get(id=response2.data['id'])
+        self.assertIsNone(booking1.flight)
+        self.assertIsNone(booking2.flight)
+
+        self.client.force_authenticate(user=self.staff_user)
+        url = reverse(
+            'bookings:flight-bookings-assign-flight-to-bookings',
+            kwargs={'flight_pk': self.flight.pk}
+        )
+        response3 = self.client.post(url)
+        self.assertEqual(response3.status_code, 200)
+        self.assertEqual(
+            response3.data['message'],
+            'Flight assigned to first bookings based on number of seats.'
+        )
+        # confirm first booking is assigned to flight since flight only has one seat
+        booking1.refresh_from_db()
+        booking2.refresh_from_db()
+        self.assertEqual(booking1.flight, self.flight)
+        self.assertIsNone(booking2.flight)
