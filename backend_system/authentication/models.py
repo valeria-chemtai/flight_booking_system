@@ -1,9 +1,12 @@
 import binascii
 import os
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models, transaction
+from django.utils import timezone
 
+from authentication import exceptions
 from common.models import SoftDeleteModel
 
 
@@ -67,15 +70,24 @@ class Token(models.Model):
     """
     key = models.CharField(max_length=2048, primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='auth_token')
-    created_at = models.DateTimeField(auto_now_add=True)
+    expires_on = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.key:
             self.key = self.generate_key()
+            current_time = timezone.now()
+            password_duration = settings.PASSWORD_VALIDITY_IN_HOURS
+            self.expires_on = (
+                current_time + timezone.timedelta(hours=password_duration))
         super().save(*args, **kwargs)
 
     def generate_key(self, *args, **kwargs):
         return binascii.hexlify(os.urandom(20)).decode()
+
+    def validate(self):
+        if self.expires_on <= timezone.now():
+            self.delete()
+            raise exceptions.AuthenticationFailedTokenExpired
 
     def __str__(self):
         return self.key

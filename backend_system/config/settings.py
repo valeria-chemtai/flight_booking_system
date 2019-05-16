@@ -134,6 +134,9 @@ USE_L10N = True
 
 USE_TZ = True
 
+# password duration
+PASSWORD_VALIDITY_IN_HOURS = env.int('PASSWORD_VALIDITY_IN_HOURS', 1)
+
 # POSTMARK TOKEN
 POSTMARK_TOKEN = env.str('POSTMARK_TOKEN', 'postmark_token')
 POSTMARK_SENDER_EMAIL = env.str('POSTMARK_SENDER_EMAIL', 'no_reply@airtech.com')
