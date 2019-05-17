@@ -2,6 +2,7 @@ from django.db import transaction
 
 from rest_framework import serializers
 
+from authentication.models import User
 from authentication.serializers import BasicUserSerializer
 from bookings.models import Booking
 from bookings.emails import send_booking_email
@@ -141,6 +142,86 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         booking = Booking.objects.create(
             booked_by=user,
+            **validated_data
+        )
+        send_booking_email(booking)
+        return booking
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
+
+
+class FlightBookingsSerializer(serializers.ModelSerializer):
+    booked_by = BasicUserSerializer(read_only=False)
+    seat = FlightSeatsViewSerializer(allow_null=True, default=None)
+
+    class Meta:
+        model = Booking
+        fields = ('id', 'booked_by', 'seat', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+    def to_internal_value(self, data):
+        internal_value = super(FlightBookingsSerializer, self).to_internal_value(data)
+        internal_value['seat'] = data.get('seat')
+        internal_value['booked_by'] = data.get('booked_by')
+        return internal_value
+
+    def validate(self, attrs):
+        seat_data = attrs.get('seat')
+        booked_by_data = attrs.get('booked_by')
+
+        if booked_by_data:
+            try:
+                attrs['booked_by'] = User.objects.get(email=booked_by_data.get('email'))
+            except User.objects.DoesNotExist:
+                raise serializers.ValidationError('Make sure the user you are trying to book for'
+                                                  ' is maintained in the system.')
+
+        if seat_data:
+            try:
+                seat_obj = Seat.objects.get(
+                    flight=self.context['flight'], row=seat_data.get('row'),
+                    letter=seat_data.get('letter').upper())
+                attrs['seat'] = seat_obj
+            except Seat.objects.DoesNotExist:
+                raise serializers.ValidationError(
+                    'Invalid seat choice.')
+        if attrs['seat']:
+            if self.context['request']._request.method == 'POST':
+                viable_seats = Seat.objects.filter(
+                    flight=self.context['flight'],
+                    class_group=attrs['seat'].class_group).exclude(booked=True)
+                if attrs['seat'] not in viable_seats:
+                    raise serializers.ValidationError(
+                        'Invalid seat choice.')
+            if self.context['request']._request.method == 'PUT':
+                if self.instance.seat and (self.instance.seat != attrs['seat']):
+                    viable_seats = Seat.objects.filter(
+                        flight=self.context['flight'],
+                        class_group=attrs['seat'].class_group).exclude(booked=True)
+                    if attrs['seat'] not in viable_seats:
+                        raise serializers.ValidationError('Invalid seat choice.')
+                    # set initially booked seat to not booked
+                    self.instance.seat.booked = False
+                    self.instance.seat.save()
+            # set seat to booked
+            attrs['seat'].booked = True
+            attrs['seat'].save()
+
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        flight = self.context['flight']
+        booking = Booking.objects.create(
+            flight=flight,
+            origin=flight.origin,
+            destination=flight.destination,
             **validated_data
         )
         send_booking_email(booking)
