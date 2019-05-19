@@ -15,7 +15,7 @@ from authentication.serializers import (
     UserSignInSerializer,
     UserSignupSerializer,
 )
-from permissions import IsAuthenticatedUser
+from common.permissions import IsAuthenticatedUser
 
 
 class UserSignupViewset(viewsets.ModelViewSet):

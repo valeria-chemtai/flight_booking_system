@@ -12,9 +12,9 @@ from bookings.serializers import (
     BookingViewSerializer,
     FlightBookingsSerializer,
 )
+from common.permissions import IsAuthenticatedUser
 from flights.models import Flight, Seat
 from flights.permissions import FlightsPermissions
-from permissions import IsAuthenticatedUser
 
 
 class BookingViewset(viewsets.ModelViewSet):

@@ -1,4 +1,4 @@
-from permissions import IsAuthenticatedUser
+from common.permissions import IsAuthenticatedUser
 
 
 class FlightsPermissions(IsAuthenticatedUser):
