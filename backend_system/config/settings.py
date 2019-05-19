@@ -1,6 +1,6 @@
 import os
 import environ
-
+import sys
 
 ROOT_DIR = environ.Path(__file__) - 2  # move up 2 levels to ~/flight_booking_system
 BASE_DIR = ROOT_DIR()
@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_extensions',
+    'django_rq',
     'rest_framework',
     'authentication',
     'bookings',
@@ -61,6 +62,26 @@ REST_FRAMEWORK = {
 }
 
 ROOT_URLCONF = 'config.urls'
+
+# rq settings
+RQ_QUEUES = {
+    'default': {
+        'HOST': 'localhost',
+        'PORT': 6379,
+        'DB': 0,
+        'PASSWORD': '',
+        'DEFAULT_TIMEOUT': 600,
+    },
+}
+
+# rqscheduler cron jobs
+RQ_CRON_JOBS = [
+    {
+        'cron_string': '0 0 * * *',  # Run at 00:00 daily
+        # 'cron_string': '*/2 * * * *',  # Run every 2nd minute
+        'func': 'bookings.jobs.travel_date_reminder',
+    },
+]
 
 TEMPLATES = [
     {
@@ -96,6 +117,62 @@ DATABASES = {
     }
 }
 
+DEFAULT_DATETIME_FORMAT = "%Y/%m/%d %H:%M:%S %z"
+
+# rq logging
+LOGGING = {
+    'version': 1,
+    'formatters': {
+        'standard': {
+            'format': "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            'datefmt': DEFAULT_DATETIME_FORMAT
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+            'stream': sys.stdout,
+            'filters': ['require_debug_true'],
+        },
+        'null': {
+            'class': 'logging.NullHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'propagate': True,
+            'level': 'INFO',
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        'urllib3': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        '': {
+            'handlers': ['console'],
+            'level': 'INFO'
+        }
+    }
+}
 # Override the default user model
 AUTH_USER_MODEL = 'authentication.User'
 
