@@ -77,8 +77,8 @@ RQ_QUEUES = {
 # rqscheduler cron jobs
 RQ_CRON_JOBS = [
     {
-        # 'cron_string': '0 0 * * *',  # Run at 00:00 daily
-        'cron_string': '*/2 * * * *',  # Run every 2nd minute
+        'cron_string': '0 0 * * *',  # Run at 00:00 daily
+        # 'cron_string': '*/2 * * * *',  # Run every 2nd minute
         'func': 'bookings.jobs.travel_date_reminder',
     },
 ]
