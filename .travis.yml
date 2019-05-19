@@ -14,8 +14,8 @@ script:
   - python manage.py test -v 2
   - pip install coverage==4.0.3
   - pip install coveralls
-  - coveralls
 
 after_success:
   - pip install coverage==4.0.3
+  - pip install coveralls
   - coveralls

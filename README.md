@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/valeria-chemtai/flight_booking_system.svg?branch=develop)](https://travis-ci.org/valeria-chemtai/flight_booking_system)
+[![Coverage Status](https://coveralls.io/repos/github/valeria-chemtai/flight_booking_system/badge.svg?branch=develop)](https://coveralls.io/github/valeria-chemtai/flight_booking_system?branch=develop)
 # Flight Booking System
 Online flight booking system API for Company Airtech.
 
