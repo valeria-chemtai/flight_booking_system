@@ -12,3 +12,7 @@ script:
   - cd backend_system
   - python manage.py migrate
   - python manage.py test -v 2
+  - coveralls
+
+after_success:
+ - coveralls
