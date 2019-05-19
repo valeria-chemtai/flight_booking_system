@@ -200,20 +200,13 @@ class FlightBookingsSerializer(serializers.ModelSerializer):
                 if attrs['seat'] not in viable_seats:
                     raise serializers.ValidationError(
                         'Invalid seat choice.')
-            if self.context['request']._request.method == 'PUT':
+            elif self.context['request']._request.method == 'PUT':
                 if self.instance.seat and (self.instance.seat != attrs['seat']):
                     viable_seats = Seat.objects.filter(
                         flight=self.context['flight'],
                         class_group=attrs['seat'].class_group).exclude(booked=True)
                     if attrs['seat'] not in viable_seats:
                         raise serializers.ValidationError('Invalid seat choice.')
-                    # set initially booked seat to not booked
-                    self.instance.seat.booked = False
-                    self.instance.seat.save()
-            # set seat to booked
-            attrs['seat'].booked = True
-            attrs['seat'].save()
-
         return attrs
 
     @transaction.atomic
@@ -225,13 +218,26 @@ class FlightBookingsSerializer(serializers.ModelSerializer):
             destination=flight.destination,
             **validated_data
         )
+        if booking.seat:
+            # set seat to booked
+            booking.seat.booked = True
+            booking.seat.save()
         travel_date_reminder_job.delay(booking)
         return booking
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        if instance.seat and (validated_data.get('seat') != instance.seat):
+            # set initially booked seat to not booked
+            self.instance.seat.booked = False
+            self.instance.seat.save()
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         instance.save()
+        if instance.seat:
+            # set seat to booked
+            instance.seat.booked = True
+            instance.seat.save()
         return instance
