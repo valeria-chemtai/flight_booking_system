@@ -5,7 +5,8 @@ from rest_framework import serializers
 from authentication.models import User
 from authentication.serializers import BasicUserSerializer
 from bookings.models import Booking
-from bookings.emails import send_booking_email
+from bookings.emails import send_booking_successful_email
+from bookings.jobs import travel_date_reminder_job
 from flights.models import Flight, Location, Seat
 from flights.serializers import (
     FlightSerializer,
@@ -144,7 +145,7 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             booked_by=user,
             **validated_data
         )
-        send_booking_email(booking)
+        send_booking_successful_email(booking)
         return booking
 
     @transaction.atomic
@@ -224,7 +225,7 @@ class FlightBookingsSerializer(serializers.ModelSerializer):
             destination=flight.destination,
             **validated_data
         )
-        send_booking_email(booking)
+        travel_date_reminder_job.delay(booking)
         return booking
 
     @transaction.atomic
