@@ -1,6 +1,8 @@
 import os
 import environ
 import sys
+import dj_database_url
+
 
 ROOT_DIR = environ.Path(__file__) - 2  # move up 2 levels to ~/flight_booking_system
 BASE_DIR = ROOT_DIR()
@@ -14,7 +16,7 @@ SECRET_KEY = env.str('SECRET_KEY', 'fpklsx9d)ru3^kw74ea#93+!qf!qxjl#pi&5x24b+8-8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DJANGO_DEBUG', True)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', 'lvh.me'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', 'lvh.me', 'vc-flight-booking-system.herokuapp.com'])
 
 # Add pytest runner
 TEST_RUNNER = 'test_runner.PytestTestRunner'
@@ -38,6 +40,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -102,21 +105,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': env.str('POSTGRES_DB_NAME', 'flight_system'),
-        'USER': env.str('POSTGRES_DB_USER', 'postgres'),
-        'PASSWORD': env.str('POSTGRES_DB_PASSWORD', ''),
-        'HOST': env.str('POSTGRES_DB_HOST', 'localhost'),
-        'PORT': env.str('POSTGRES_DB_PORT', 5432),
-        'OPTIONS': {
-            'connect_timeout': 5000,
-        }
-    }
-}
+# # Database
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': env.str('POSTGRES_DB_NAME', 'flight_system'),
+#         'USER': env.str('POSTGRES_DB_USER', 'postgres'),
+#         'PASSWORD': env.str('POSTGRES_DB_PASSWORD', ''),
+#         'HOST': env.str('POSTGRES_DB_HOST', 'localhost'),
+#         'PORT': env.str('POSTGRES_DB_PORT', 5432),
+#         'OPTIONS': {
+#             'connect_timeout': 5000,
+#         }
+#     }
+# }
 
+DATABASES = {
+    # Will load database url from DATABASE_URL environment variable
+    # postgres://USER:PASSWORD@HOST:PORT/NAME
+    'default': dj_database_url.config()
+}
 DEFAULT_DATETIME_FORMAT = "%Y/%m/%d %H:%M:%S %z"
 
 # rq logging
@@ -225,3 +233,11 @@ POSTMARK_SENDER_EMAIL = env.str('POSTMARK_SENDER_EMAIL', 'no_reply@airtech.com')
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Extra lookup directories for collectstatic to find static files
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
+
+#  Add configuration for static files storage using whitenoise
+STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
