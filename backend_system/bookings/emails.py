@@ -17,7 +17,7 @@ def get_booking_successful_template(booking):
         f'<p> <b style="font-size:15px;">From: </b> {booking.origin.airport}, {booking.origin.city}, {booking.origin.country}</p>'
         f'<p> <b style="font-size:15px;">To: </b> {booking.destination.airport}, {booking.destination.city}, {booking.destination.country}</p>'
         f'<p> <b style="font-size:15px;">Travel Date: </b> {booking.travel_date}</p>'
-        f'<p> <b style="font-size:15px;">Flight Name: </b> {booking.flight.name}</p>'
+        f'<p> <b style="font-size:15px;">Flight Name: </b> {booking.flight.name if booking.flight else ""}</p>'
         f'<p> <b style="font-size:15px;">Seat: </b> {booking.seat.seat if booking.seat else ""}, {booking.seat.class_group if booking.seat else ""}</p>'
         '</body>'
         '</html>'
