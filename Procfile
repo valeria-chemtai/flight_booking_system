@@ -1,0 +1,1 @@
+web: sh -c 'cd ./backend_system/ && exec gunicorn config.wsgi --log-file -'
