@@ -123,4 +123,5 @@ Interact with the API, send http requests using Postman(json format)
 You can run the tests ```python manage.py test```
 
 ## Heroku app
-[WIP](https://vc-flight-booking-system.herokuapp.com)
+https://vc-flight-booking-system.herokuapp.com
+ sample request (here)[https://github.com/valeria-chemtai/flight_booking_system/blob/develop/DOCS/sample_requests.md]
