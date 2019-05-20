@@ -61,7 +61,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    # 'EXCEPTION_HANDLER': 'common.exception_handler.exception_handler'
+    'EXCEPTION_HANDLER': 'common.exception_handler.exception_handler'
 }
 
 ROOT_URLCONF = 'config.urls'
@@ -71,19 +71,11 @@ RQ_QUEUES = {
     'default': {
         'HOST': env.str('DJANGO_RQ_HOST', 'localhost'),
         'PORT': env.str('DJANGO_RQ_PORT', 6379),
+        'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379'),
         'DB': env.str('DJANGO_RQ_DB', 0),
         'PASSWORD': env.str('DJANGO_RQ_PASSWORD', ''),
         'DEFAULT_TIMEOUT': 600,
     },
-    'high': {
-        'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'),  # If you're on Heroku
-        'DEFAULT_TIMEOUT': 500,
-    },
-    'low': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-    }
 }
 
 # rqscheduler cron jobs
