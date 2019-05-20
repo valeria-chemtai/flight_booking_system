@@ -71,6 +71,7 @@ RQ_QUEUES = {
     'default': {
         'HOST': env.str('DJANGO_RQ_HOST', 'localhost'),
         'PORT': env.str('DJANGO_RQ_PORT', 6379),
+        'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379'),
         'DB': env.str('DJANGO_RQ_DB', 0),
         'PASSWORD': env.str('DJANGO_RQ_PASSWORD', ''),
         'DEFAULT_TIMEOUT': 600,
