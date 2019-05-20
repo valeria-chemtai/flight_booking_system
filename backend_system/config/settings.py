@@ -66,10 +66,10 @@ ROOT_URLCONF = 'config.urls'
 # rq settings
 RQ_QUEUES = {
     'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-        'PASSWORD': '',
+        'HOST': env.str('DJANGO_RQ_HOST', 'localhost'),
+        'PORT': env.str('DJANGO_RQ_PORT', 6379),
+        'DB': env.str('DJANGO_RQ_DB', 0),
+        'PASSWORD': env.str('DJANGO_RQ_PASSWORD', ''),
         'DEFAULT_TIMEOUT': 600,
     },
 }
@@ -112,7 +112,7 @@ DATABASES = {
         'HOST': env.str('POSTGRES_DB_HOST', 'localhost'),
         'PORT': env.str('POSTGRES_DB_PORT', 5432),
         'OPTIONS': {
-            'connect_timeout': 30,
+            'connect_timeout': 5000,
         }
     }
 }
