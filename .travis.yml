@@ -12,3 +12,10 @@ script:
   - cd backend_system
   - python manage.py migrate
   - python manage.py test -v 2
+  - pip install coverage==4.0.3
+  - pip install coveralls
+
+after_success:
+  - pip install coverage==4.0.3
+  - pip install coveralls
+  - coveralls

@@ -1,0 +1,24 @@
+[run]
+branch = True
+
+[report]
+include=
+    */backend_system/*
+
+omit=
+    *__init__.py*
+    *apps.py*
+    *admin.py*
+    *backends.py*
+    */bookings/serializers.py*
+    */common/*
+    */config/*
+    *emails.py*
+    *exceptions.py*
+    *jobs.py*
+    *manage.py*
+    */migrations/*
+    *models.py*
+    *tests/*
+    *test_runner.py*
+    *urls.py*
