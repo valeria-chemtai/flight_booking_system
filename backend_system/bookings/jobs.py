@@ -6,7 +6,7 @@ from bookings.emails import send_booking_reminder_email
 from bookings.models import Booking
 
 
-@job('default')
+@job('high')
 def travel_date_reminder_job(bookings):
     for booking in bookings:
         # send user's reminders of their travel
