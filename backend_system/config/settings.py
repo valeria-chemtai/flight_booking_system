@@ -75,6 +75,15 @@ RQ_QUEUES = {
         'PASSWORD': env.str('DJANGO_RQ_PASSWORD', ''),
         'DEFAULT_TIMEOUT': 600,
     },
+    'high': {
+        'URL': os.getenv('REDISTOGO_URL', 'redis://localhost:6379/0'),  # If you're on Heroku
+        'DEFAULT_TIMEOUT': 500,
+    },
+    'low': {
+        'HOST': 'localhost',
+        'PORT': 6379,
+        'DB': 0,
+    }
 }
 
 # rqscheduler cron jobs
