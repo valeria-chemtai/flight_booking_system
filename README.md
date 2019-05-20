@@ -101,6 +101,9 @@ Interact with the API, send http requests using Postman(json format)
 | `/v1/allowed-destinations/<pk>` | `DELETE` |  Delete a single location | Superuser |
 | `/v1/bookings/` | `POST`| Book a flight| Registered users |
 | `/v1/bookings/` | `GET`| List all bookings available in system| Registered users(Normal users will only see their bookings while staff will see all bookings)|
+| `/v1/bookings/<pk>/` | `GET`| Retrieve specific booking| Registered user who made booking or staff |
+| `/v1/bookings/<pk>/` | `PUT`| Edit specific booking| Registered user who made booking or staff |
+| `/v1/bookings/<pk>/` | `DELETE`| Edit specific booking| Registered user who made booking or staff |
 | `/v1/bookings/?travel_date=YYYY-MM-DD` | `GET`| List all bookings available in system for a particular travel date| Registered users(Normal users will only see their bookings while staff will see all bookings)|
 | `/v1/flights/` | `POST`| Add a flight to the system| Staff |
 | `/v1/flights/` | `GET`| List all flights available in system| Registered users |
@@ -118,3 +121,6 @@ Interact with the API, send http requests using Postman(json format)
 
 ## Testing
 You can run the tests ```python manage.py test```
+
+## Heroku app
+[WIP](https://vc-flight-booking-system.herokuapp.com)
