@@ -29,8 +29,8 @@ Note: Normal users can only view their bookings
 ![](/Docs/images/bookings_view_normal_user.png?)
 
 ## Staff Operations
-A staff can perform can also perform all the operations allowed for a normal user.
-Other addtional operations a staff can perform are:
+A staff can also perform all the operations allowed for a normal user.
+Other additional operations a staff can perform are:
 
 #### Add allowed destination
 ![](/Docs/images/add_destination.png?)
@@ -65,8 +65,8 @@ Note: staff can view everyones bookings.
 ![](/Docs/images/flight_mass_assign_bookings.png?)
 
 ## Super_user operations
-A superuser can perform can also perform all the operations allowed for staff.
-Other addtional operations a superuser can perform are:
+A superuser can also perform all the operations allowed for staff.
+Other additional operations a superuser can perform are:
 * Delete destination
 * Delete flight
 
