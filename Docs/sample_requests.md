@@ -9,7 +9,6 @@
 ![](/Docs/images/view_profile.png?)
 
 #### View allowed destinations
-
 ![](/Docs/images/view_destinations.png?)
 
 #### View available flights
@@ -69,4 +68,3 @@ A superuser can also perform all the operations allowed for staff.
 Other additional operations a superuser can perform are:
 * Delete destination
 * Delete flight
-
