@@ -3,8 +3,10 @@ import os
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.postgres.fields import ArrayField
 from django.db import models, transaction
 from django.utils import timezone
+
 
 from authentication import exceptions
 from common.models import SoftDeleteModel
@@ -51,6 +53,7 @@ class User(AbstractBaseUser, SoftDeleteModel):
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     passport_photo = models.ImageField(upload_to='passports', null=True, blank=True)
+    tracking_emails = ArrayField(models.EmailField(), blank=True, null=True)
 
     objects = UserManager()
     USERNAME_FIELD = 'email'

@@ -27,11 +27,12 @@ class UserSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(
         max_length=30, allow_null=False, allow_blank=False, required=True)
     passport_photo = serializers.ImageField(allow_null=True)
+    tracking_emails = serializers.ListField(child=serializers.EmailField())
 
     class Meta:
         model = User
         fields = ('pk', 'email', 'first_name', 'last_name', 'date_joined',
-                  'is_active', 'is_staff', 'is_superuser', 'passport_photo')
+                  'is_active', 'is_staff', 'is_superuser', 'passport_photo', 'tracking_emails')
         read_only_fields = ('pk', 'date_joined')
     # TODO: customize update to patch instead of put
 
@@ -46,6 +47,8 @@ class UserSignupSerializer(serializers.Serializer):
         max_length=30, allow_null=False, allow_blank=True, required=True)
     passport_photo = serializers.ImageField(allow_null=True, required=False)
     password = serializers.CharField(required=True)
+    # tracking_emails = MultiEmailField(allow_null=True, required=False)
+    tracking_emails = serializers.ListField(child=serializers.EmailField())
 
     def create(self, validated_data):
         user = User.objects.create_user(
